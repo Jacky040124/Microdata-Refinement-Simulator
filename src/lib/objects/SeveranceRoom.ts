@@ -210,7 +210,7 @@ export class SeveranceRoom {
     seamMaterial?: THREE.Material;
     normal: THREE.Vector3;
   }) {
-    const panelWidth = 1.2;
+    const panelWidth = 2.5;
     const numPanels = Math.ceil(params.width / panelWidth);
     const actualPanelWidth = params.width / numPanels;
     const thickness = 0.1;
@@ -231,6 +231,11 @@ export class SeveranceRoom {
       panel.receiveShadow = true;
       panel.castShadow = false;
       this.group.add(panel);
+
+      // Ventilation Grille (Top of wall)
+      if (params.start.y < 0.1) {
+         this.createVentilationGrille(pos, actualPanelWidth, params.normal, panel.rotation);
+      }
       
       // Baseboard
       if (params.baseboardMaterial && params.start.y < 0.1) {
@@ -270,6 +275,61 @@ export class SeveranceRoom {
         this.group.add(seam);
       }
     }
+  }
+
+  createVentilationGrille(position: THREE.Vector3, width: number, normal: THREE.Vector3, rotation: THREE.Euler) {
+    const grilleHeight = 0.5;
+    const grilleWidth = width - 0.4; 
+    const thickness = 0.1;
+    
+    const group = new THREE.Group();
+    group.position.copy(position);
+    
+    const wallHeight = SEVERANCE_ROOM_CONFIG.DIMENSIONS.HEIGHT;
+    group.position.y = wallHeight - grilleHeight / 2 - 0.3; 
+    group.position.add(normal.clone().multiplyScalar(thickness/2)); 
+    group.rotation.copy(rotation);
+    
+    const frameColor = 0xcccccc;
+    const frameMat = new THREE.MeshStandardMaterial({ color: frameColor, roughness: 0.4 });
+    
+    const backingGeo = new THREE.BoxGeometry(grilleWidth, grilleHeight, 0.02);
+    const backingMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const backing = new THREE.Mesh(backingGeo, backingMat);
+    backing.position.z = 0.01; 
+    group.add(backing);
+    
+    const numSlats = 6;
+    const slatHeight = grilleHeight / (numSlats * 2); 
+    const slatGeo = new THREE.BoxGeometry(grilleWidth, slatHeight, 0.04);
+    
+    for(let i=0; i<numSlats; i++) {
+        const slat = new THREE.Mesh(slatGeo, frameMat);
+        const y = (i - numSlats/2 + 0.5) * (slatHeight * 2.5);
+        slat.position.set(0, y, 0.03);
+        group.add(slat);
+    }
+    
+    const rimThickness = 0.03;
+    const rimGeoH = new THREE.BoxGeometry(grilleWidth + rimThickness*2, rimThickness, 0.05);
+    const rimTop = new THREE.Mesh(rimGeoH, frameMat);
+    rimTop.position.set(0, grilleHeight/2 + rimThickness/2, 0.03);
+    group.add(rimTop);
+    
+    const rimBottom = new THREE.Mesh(rimGeoH, frameMat);
+    rimBottom.position.set(0, -grilleHeight/2 - rimThickness/2, 0.03);
+    group.add(rimBottom);
+    
+    const rimGeoV = new THREE.BoxGeometry(rimThickness, grilleHeight, 0.05);
+    const rimLeft = new THREE.Mesh(rimGeoV, frameMat);
+    rimLeft.position.set(-grilleWidth/2 - rimThickness/2, 0, 0.03);
+    group.add(rimLeft);
+    
+    const rimRight = new THREE.Mesh(rimGeoV, frameMat);
+    rimRight.position.set(grilleWidth/2 + rimThickness/2, 0, 0.03);
+    group.add(rimRight);
+
+    this.group.add(group);
   }
 
   createColumn(position: THREE.Vector3) {

@@ -156,7 +156,7 @@ export const SEVERANCE_ROOM_CONFIG = {
   },
   COLORS: {
     CARPET: 0x2d4635, // Iconic dark green carpet
-    WALLS: 0xf9f7ef,  // Brighter off-white clinical walls
+    WALLS: 0xeef0f2,  // Cooler, more clinical white/grey
     WALL_SEAMS: 0xc5c1b8, // Darker dividers between panels
     CEILING: 0xffffff, // Pure white ceiling
     BASEBOARD: 0x1a1a1a, // Dark trim
