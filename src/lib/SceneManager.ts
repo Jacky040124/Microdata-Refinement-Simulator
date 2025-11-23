@@ -31,7 +31,7 @@ export class ThreeSceneManager {
   keyframeOrientations: { [key in CameraKey]: THREE.Quaternion };
   lookAtMatrix: THREE.Matrix4 = new THREE.Matrix4();
   
-  devMode: boolean = true;
+  devMode: boolean = false;
   pressedKeys: Set<string> = new Set();
   cameraMoveSpeed: number = 0.1;
   
@@ -41,6 +41,8 @@ export class ThreeSceneManager {
   
   debugOverlay: HTMLElement;
   monitorHintOverlay: HTMLElement;
+  clickToBeginOverlay: HTMLElement;
+  hasInteracted: boolean = false;
   monitorInteractive: boolean = false;
   monitorHovered: boolean = false;
   monitorHoverTimeout: number | null = null;
@@ -98,6 +100,31 @@ export class ThreeSceneManager {
     });
     this.monitorHintOverlay.textContent = 'PRESS ESC TO RETURN';
     document.body.appendChild(this.monitorHintOverlay);
+
+    // Click to begin overlay
+    this.clickToBeginOverlay = document.createElement('div');
+    Object.assign(this.clickToBeginOverlay.style, {
+      position: 'fixed',
+      bottom: '40px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      padding: '10px 20px',
+      border: '1px solid rgba(137, 196, 255, 0.6)',
+      color: '#8bd0ff',
+      fontFamily: '"IBM Plex Mono", "Courier New", monospace',
+      fontSize: '14px',
+      letterSpacing: '0.3em',
+      textTransform: 'uppercase',
+      background: 'rgba(10, 22, 40, 0.75)',
+      boxShadow: '0 0 20px rgba(137, 196, 255, 0.35)',
+      borderRadius: '4px',
+      opacity: '1',
+      transition: 'opacity 500ms ease',
+      pointerEvents: 'none',
+      zIndex: '9998',
+    });
+    this.clickToBeginOverlay.textContent = 'CLICK ANYWHERE TO BEGIN';
+    document.body.appendChild(this.clickToBeginOverlay);
     
     const aspect = container.clientWidth / container.clientHeight;
     this.camera = new THREE.PerspectiveCamera(35, aspect, 0.1, 1000);
@@ -150,6 +177,17 @@ export class ThreeSceneManager {
   
   setupEventListeners(_container: HTMLElement) {
     const handleClick = (event: MouseEvent) => {
+      // Handle first click to start
+      if (!this.hasInteracted) {
+        this.hasInteracted = true;
+        this.clickToBeginOverlay.style.opacity = '0';
+        setTimeout(() => {
+          if (this.clickToBeginOverlay.parentNode) {
+            this.clickToBeginOverlay.parentNode.removeChild(this.clickToBeginOverlay);
+          }
+        }, 500);
+      }
+
       const target = event.target as HTMLElement;
       if (target.closest('#root')) {
         return;
@@ -535,6 +573,13 @@ export class ThreeSceneManager {
   private updateDebugOverlay() {
     if (!this.debugOverlay) return;
 
+    // Only show debug overlay when dev mode is enabled
+    if (!this.devMode) {
+      this.debugOverlay.style.display = 'none';
+      return;
+    }
+
+    this.debugOverlay.style.display = 'block';
     const pos = this.camera.position;
     const rot = this.camera.rotation;
     const target = this.controls?.target ?? new THREE.Vector3();
@@ -581,6 +626,9 @@ export class ThreeSceneManager {
     
     if (this.debugOverlay && this.debugOverlay.parentNode) {
       this.debugOverlay.parentNode.removeChild(this.debugOverlay);
+    }
+    if (this.clickToBeginOverlay && this.clickToBeginOverlay.parentNode) {
+      this.clickToBeginOverlay.parentNode.removeChild(this.clickToBeginOverlay);
     }
     
     this.controls.dispose();

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import GitHubStarButton from "@/components/profile/GitHubStarButton";
+import MusicPlayer from "@/components/MusicPlayer";
 import "./App.css";
 
 function App() {
-  const [devMode, setDevMode] = useState(true);
+  const [devMode, setDevMode] = useState(false);
 
   useEffect(() => {
     if (window.threeApp) {
@@ -20,6 +21,7 @@ function App() {
 
   return (
     <div className="minimal-overlay">
+      {!devMode && <MusicPlayer />}
       <div className="header-controls">
         <GitHubStarButton repoUrl="https://github.com/Jacky040124/typer-monkey" repoName="typer-monkey" />
         <button
