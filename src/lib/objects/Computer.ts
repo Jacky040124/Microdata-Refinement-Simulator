@@ -10,6 +10,7 @@ export class Computer {
   monitorScreen: MonitorScreen | null = null;
   hasScreen: boolean;
   pendingHoverListener: ((hovering: boolean) => void) | null = null;
+  private _currentOpacity: number = 0;
 
   constructor(parent: THREE.Object3D, hasScreen: boolean = false) {
     this.group = new THREE.Group();
@@ -22,6 +23,11 @@ export class Computer {
     if (this.monitorScreen) {
       this.monitorScreen.setViewMode(cameraKey);
     }
+  }
+
+  setScreenOpacity(opacity: number) {
+    this._currentOpacity = opacity;
+    this.monitorScreen?.setScreenOpacity(opacity);
   }
 
   setMonitorInteractivity(enabled: boolean) {
@@ -69,6 +75,7 @@ export class Computer {
       if (this.hasScreen) {
         // Interactive Screen (Iframe)
         this.monitorScreen = new MonitorScreen(this.model);
+        this.monitorScreen.setScreenOpacity(this._currentOpacity);
         if (this.pendingHoverListener) {
           this.monitorScreen.setHoverListener(this.pendingHoverListener);
         }

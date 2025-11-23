@@ -31,6 +31,8 @@ export class ThreeSceneManager {
   keyframeOrientations: { [key in CameraKey]: THREE.Quaternion };
   lookAtMatrix: THREE.Matrix4 = new THREE.Matrix4();
   
+  currentMonitorOpacity: number = 0;
+
   devMode: boolean = false;
   pressedKeys: Set<string> = new Set();
   cameraMoveSpeed: number = 0.1;
@@ -61,7 +63,7 @@ export class ThreeSceneManager {
     this.debugOverlay = document.createElement('div');
     Object.assign(this.debugOverlay.style, {
       position: 'fixed',
-      top: '12px',
+      top: '60px',
       left: '12px',
       padding: '10px 12px',
       backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -164,6 +166,7 @@ export class ThreeSceneManager {
     
     this.monkeyScene = new MonkeyScene(this.scene);
     this.monkeyScene.setViewMode(this.currentKeyframe || CameraKey.FRONT);
+    this.monkeyScene.setMonitorOpacity(0);
     this.setMonitorInteractivity(false);
     this.monkeyScene.setMonitorHoverListener(this.handleMonitorHover);
     
@@ -354,6 +357,19 @@ export class ThreeSceneManager {
     const targetOrientation = this.keyframeOrientations[key].clone();
     const orientationState = { t: 0 };
     
+    // Monitor opacity transition
+    const targetShowMonitor = key === CameraKey.BACK_WIDE || key === CameraKey.BACK_CLOSE;
+    const targetOpacity = targetShowMonitor ? 1 : 0;
+    const opacityState = { t: this.currentMonitorOpacity };
+    
+    const opacityTween = new TWEEN.Tween(opacityState)
+      .to({ t: targetOpacity }, duration)
+      .easing(TWEEN.Easing.Cubic.InOut) // Cubic for slightly softer transition than Quintic
+      .onUpdate(() => {
+        this.monkeyScene.setMonitorOpacity(opacityState.t);
+        this.currentMonitorOpacity = opacityState.t;
+      });
+    
     const posTween = new TWEEN.Tween(this.cameraPosition)
       .to(targetKeyframe.position, duration)
       .easing(TWEEN.Easing.Quintic.InOut)
@@ -382,8 +398,9 @@ export class ThreeSceneManager {
     posTween.start();
     focTween.start();
     orientationTween.start();
+    opacityTween.start();
       
-    console.log('[TRANSITION] Tweens started:', posTween, focTween, orientationTween);
+    console.log('[TRANSITION] Tweens started:', posTween, focTween, orientationTween, opacityTween);
   }
   
   cycleView() {

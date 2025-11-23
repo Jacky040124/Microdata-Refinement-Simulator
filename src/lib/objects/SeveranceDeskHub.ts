@@ -46,6 +46,10 @@ export class SeveranceDeskHub {
     }
   }
 
+  setScreenOpacity(opacity: number) {
+    this.mainComputer?.setScreenOpacity(opacity);
+  }
+
   setMonitorInteractivity(enabled: boolean) {
     this.mainComputer?.setMonitorInteractivity(enabled);
   }

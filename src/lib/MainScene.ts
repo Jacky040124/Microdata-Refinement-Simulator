@@ -40,6 +40,10 @@ export class MonkeyScene {
     this.deskHub.setViewMode(cameraKey);
   }
 
+  setMonitorOpacity(opacity: number) {
+    this.deskHub.setScreenOpacity(opacity);
+  }
+
   setMonitorInteractivity(enabled: boolean) {
     this.deskHub.setMonitorInteractivity(enabled);
   }

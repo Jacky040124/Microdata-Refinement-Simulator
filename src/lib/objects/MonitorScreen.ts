@@ -77,7 +77,11 @@ export class MonitorScreen {
     textureLoader.load('/models/wallpaper.jpg', (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace;
 
-      const material = new THREE.MeshBasicMaterial({ map: texture });
+      const material = new THREE.MeshBasicMaterial({ 
+        map: texture,
+        transparent: true,
+        opacity: 1
+      });
       const geometry = new THREE.PlaneGeometry(this.width, this.height);
       this.wallpaperMesh = new THREE.Mesh(geometry, material);
 
@@ -123,13 +127,25 @@ export class MonitorScreen {
     this.hoverListener = handler;
   }
 
-  private updateScreenVisibility(showIframe: boolean) {
+  setScreenOpacity(iframeOpacity: number) {
+    const opacity = Math.max(0, Math.min(1, iframeOpacity));
+    
+    if (this.containerEl) {
+      this.containerEl.style.opacity = opacity.toString();
+    }
+    
+    if (this.wallpaperMesh && this.wallpaperMesh.material instanceof THREE.Material) {
+      this.wallpaperMesh.material.opacity = 1 - opacity;
+      this.wallpaperMesh.visible = opacity < 1; 
+    }
+    
     if (this.iframeObject) {
-      this.iframeObject.visible = showIframe;
+      this.iframeObject.visible = opacity > 0;
     }
-    if (this.wallpaperMesh) {
-      this.wallpaperMesh.visible = !showIframe;
-    }
+  }
+
+  private updateScreenVisibility(_showIframe: boolean) {
+    // Deprecated: Visibility is now handled via setScreenOpacity for smooth transitions
   }
 
   setInteractionEnabled(enabled: boolean) {
