@@ -43,11 +43,19 @@ export class MonkeyScene {
     this.deskHub.setViewMode(cameraKey);
   }
 
-  setIsTyping(isTyping: boolean) {
+  setMonitorInteractivity(enabled: boolean) {
+    this.deskHub.setMonitorInteractivity(enabled);
+  }
+
+  setMonitorHoverListener(handler: ((hovering: boolean) => void) | null) {
+    this.deskHub.setMonitorHoverListener(handler);
+  }
+
+  setIsTyping(_isTyping: boolean) {
     // this.monkey.setIsTyping(isTyping);
   }
 
-  update(elapsedTime: number) {
+  update(_elapsedTime: number) {
     // this.monkey.update(elapsedTime);
   }
 }

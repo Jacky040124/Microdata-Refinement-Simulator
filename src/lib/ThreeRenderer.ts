@@ -56,6 +56,12 @@ export class ThreeRendererManager {
     this.cssRenderer.render(cssScene, camera);
   }
 
+  setCSSInteractivity(enabled: boolean) {
+    const pointerValue = enabled ? 'auto' : 'none';
+    this.cssRenderer.domElement.style.pointerEvents = pointerValue;
+    this.cssRenderer.domElement.style.touchAction = enabled ? 'auto' : 'none';
+  }
+
   dispose() {
     this.webglRenderer.dispose();
     this.cssRenderer.domElement.remove();

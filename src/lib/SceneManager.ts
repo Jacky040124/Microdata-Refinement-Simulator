@@ -40,6 +40,10 @@ export class ThreeSceneManager {
   animationFrameId: number | null = null;
   
   debugOverlay: HTMLElement;
+  monitorHintOverlay: HTMLElement;
+  monitorInteractive: boolean = false;
+  monitorHovered: boolean = false;
+  monitorHoverTimeout: number | null = null;
 
   constructor(
     container: HTMLElement, 
@@ -69,6 +73,31 @@ export class ThreeSceneManager {
       zIndex: '9999',
     });
     document.body.appendChild(this.debugOverlay);
+
+    // Escape hint overlay (hidden by default)
+    this.monitorHintOverlay = document.createElement('div');
+    Object.assign(this.monitorHintOverlay.style, {
+      position: 'fixed',
+      bottom: '40px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      padding: '10px 20px',
+      border: '1px solid rgba(137, 196, 255, 0.6)',
+      color: '#8bd0ff',
+      fontFamily: '"IBM Plex Mono", "Courier New", monospace',
+      fontSize: '14px',
+      letterSpacing: '0.3em',
+      textTransform: 'uppercase',
+      background: 'rgba(10, 22, 40, 0.75)',
+      boxShadow: '0 0 20px rgba(137, 196, 255, 0.35)',
+      borderRadius: '4px',
+      opacity: '0',
+      transition: 'opacity 200ms ease',
+      pointerEvents: 'none',
+      zIndex: '9998',
+    });
+    this.monitorHintOverlay.textContent = 'PRESS ESC TO RETURN';
+    document.body.appendChild(this.monitorHintOverlay);
     
     const aspect = container.clientWidth / container.clientHeight;
     this.camera = new THREE.PerspectiveCamera(35, aspect, 0.1, 1000);
@@ -108,6 +137,8 @@ export class ThreeSceneManager {
     
     this.monkeyScene = new MonkeyScene(this.scene);
     this.monkeyScene.setViewMode(this.currentKeyframe || CameraKey.FRONT);
+    this.setMonitorInteractivity(false);
+    this.monkeyScene.setMonitorHoverListener(this.handleMonitorHover);
     
     this.setupEventListeners(container);
     
@@ -127,6 +158,10 @@ export class ThreeSceneManager {
       if (this.devMode) {
         return;
       }
+
+      if (this.monitorInteractive && target.closest('#three-css')) {
+        return;
+      }
       
       event.preventDefault();
       console.log('Click detected, cycling view');
@@ -135,14 +170,33 @@ export class ThreeSceneManager {
     
     document.addEventListener('mousedown', handleClick);
     this.handleClick = handleClick;
+    this.setupEscapeListener();
     this.setupKeyboardControls();
   }
   
   private handleClick?: (e: MouseEvent) => void;
+  private handleEscapeKey?: (e: KeyboardEvent) => void;
+
+  setupEscapeListener() {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (this.devMode) return;
+      
+      const activeKeyframe = this.targetKeyframe || this.currentKeyframe;
+      if (activeKeyframe === CameraKey.BACK_WIDE) {
+        event.preventDefault();
+        this.transitionTo(CameraKey.FRONT);
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscapeKey);
+    this.handleEscapeKey = handleEscapeKey;
+  }
+
   
   setupKeyboardControls() {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!this.devMode) return;
+      if (!this.devMode || this.monitorInteractive) return;
       
       const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'W', 'a', 'A', 's', 'S', 'd', 'D'];
       if (keys.includes(event.key)) {
@@ -152,7 +206,7 @@ export class ThreeSceneManager {
     };
     
     const handleKeyUp = (event: KeyboardEvent) => {
-      if (!this.devMode) return;
+      if (!this.devMode || this.monitorInteractive) return;
       
       const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'W', 'a', 'A', 's', 'S', 'd', 'D'];
       if (keys.includes(event.key)) {
@@ -260,6 +314,7 @@ export class ThreeSceneManager {
         this.currentKeyframe = key;
         this.targetKeyframe = undefined;
         this.monkeyScene.setViewMode(key);
+        this.updateMonitorForCamera(key);
       });
     
     const focTween = new TWEEN.Tween(this.cameraFocalPoint)
@@ -317,6 +372,87 @@ export class ThreeSceneManager {
       }
       console.log('Dev mode disabled - keyframe control restored');
     }
+  }
+
+  private updateMonitorForCamera(key: CameraKey) {
+    const shouldEnable = key === CameraKey.BACK_WIDE || key === CameraKey.BACK_CLOSE;
+    this.setMonitorInteractivity(shouldEnable);
+    if (this.devMode) {
+      this.hideMonitorHint();
+    } else if (key === CameraKey.BACK_WIDE && shouldEnable) {
+      this.showMonitorHint();
+    } else {
+      this.hideMonitorHint();
+    }
+  }
+
+  private setMonitorInteractivity(enabled: boolean) {
+    if (this.monitorInteractive === enabled) return;
+    this.monitorInteractive = enabled;
+    this.rendererManager.setCSSInteractivity(enabled);
+    this.monkeyScene.setMonitorInteractivity(enabled);
+    if (!enabled) {
+      this.clearHoverState();
+      this.hideMonitorHint();
+    }
+  }
+
+  private handleMonitorHover = (hovering: boolean) => {
+    if (this.devMode) return;
+    this.monitorHovered = hovering;
+    console.log('[SceneManager] monitor hover event:', hovering, 'current=', this.currentKeyframe, 'target=', this.targetKeyframe);
+
+    if (!hovering) {
+      this.clearHoverTimeout();
+      if (this.currentKeyframe === CameraKey.BACK_CLOSE) {
+        console.log('[SceneManager] hover ended while BACK_CLOSE, returning to BACK_WIDE');
+        this.transitionTo(CameraKey.BACK_WIDE);
+      }
+      return;
+    }
+
+    if (this.currentKeyframe === CameraKey.BACK_WIDE || this.targetKeyframe === CameraKey.BACK_WIDE) {
+      console.log('[SceneManager] hover while BACK_WIDE, starting timeout');
+      this.startHoverTimeout();
+    }
+  };
+
+  private startHoverTimeout() {
+    if (this.monitorHoverTimeout) return;
+    console.log('[SceneManager] scheduling hover timeout to go BACK_CLOSE');
+    this.monitorHoverTimeout = window.setTimeout(() => {
+      this.monitorHoverTimeout = null;
+      const canTransition =
+        this.monitorHovered &&
+        (this.currentKeyframe === CameraKey.BACK_WIDE || this.targetKeyframe === CameraKey.BACK_WIDE);
+      console.log('[SceneManager] hover timeout fired, canTransition=', canTransition, 'current=', this.currentKeyframe, 'target=', this.targetKeyframe);
+      if (canTransition) {
+        this.transitionTo(CameraKey.BACK_CLOSE);
+      }
+    }, 500);
+  }
+
+  private clearHoverTimeout() {
+    if (this.monitorHoverTimeout) {
+      console.log('[SceneManager] clearing hover timeout');
+      clearTimeout(this.monitorHoverTimeout);
+      this.monitorHoverTimeout = null;
+    }
+  }
+
+  private clearHoverState() {
+    this.monitorHovered = false;
+    this.clearHoverTimeout();
+  }
+
+  private showMonitorHint() {
+    this.monitorHintOverlay.style.opacity = '1';
+    this.monitorHintOverlay.style.visibility = 'visible';
+  }
+
+  private hideMonitorHint() {
+    this.monitorHintOverlay.style.opacity = '0';
+    this.monitorHintOverlay.style.visibility = 'hidden';
   }
 
   start() {
@@ -422,6 +558,9 @@ export class ThreeSceneManager {
     
     if (this.handleClick) {
       document.removeEventListener('mousedown', this.handleClick);
+    }
+    if (this.handleEscapeKey) {
+      document.removeEventListener('keydown', this.handleEscapeKey);
     }
     if (this.handleKeyDown) {
       document.removeEventListener('keydown', this.handleKeyDown);

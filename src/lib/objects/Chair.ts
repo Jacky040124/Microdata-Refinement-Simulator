@@ -43,8 +43,6 @@ export class Chair {
   }
 
   createChair() {
-    const { DIMENSIONS } = CHAIR_CONFIG;
-
     // 1. Five-Star Base
     this.createBase();
 

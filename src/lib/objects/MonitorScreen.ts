@@ -9,8 +9,13 @@ export class MonitorScreen {
   position: THREE.Vector3 = new THREE.Vector3(0, 1.05, 0.1); 
   scale: number = 0.0022;
   
+  containerEl: HTMLDivElement | null = null;
+  iframeEl: HTMLIFrameElement | null = null;
   iframeObject: CSS3DObject | null = null;
   wallpaperMesh: THREE.Mesh | null = null;
+  isInteractive: boolean = false;
+  canShowIframe: boolean = false;
+  hoverListener: ((hovering: boolean) => void) | null = null;
 
   constructor(parent: THREE.Object3D) {
     this.createScreen(parent);
@@ -26,6 +31,11 @@ export class MonitorScreen {
     container.style.display = 'flex';
     container.style.alignItems = 'center';
     container.style.justifyContent = 'center';
+    container.style.pointerEvents = 'none';
+    container.style.transition = 'box-shadow 200ms ease-out';
+    this.containerEl = container;
+    container.addEventListener('pointerenter', this.handlePointerEnter);
+    container.addEventListener('pointerleave', this.handlePointerLeave);
     
     const iframe = document.createElement('iframe');
     iframe.src = "https://passi.design/lab/lumon/";
@@ -33,6 +43,8 @@ export class MonitorScreen {
     iframe.style.height = '100%';
     iframe.style.border = '0';
     iframe.style.pointerEvents = 'none';
+    iframe.setAttribute('title', 'Lumon Data Refinement');
+    this.iframeEl = iframe;
     
     container.appendChild(iframe);
 
@@ -91,6 +103,67 @@ export class MonitorScreen {
     occlusionMesh.scale.set(this.scale, this.scale, this.scale);
     
     parent.add(occlusionMesh);
+  }
+
+  private handlePointerEnter = () => {
+    console.log('[MonitorScreen] pointerenter, canShowIframe=', this.canShowIframe, 'interactive=', this.isInteractive);
+    if (this.hoverListener && this.canShowIframe) {
+      this.hoverListener(true);
+    }
+  };
+
+  private handlePointerLeave = () => {
+    console.log('[MonitorScreen] pointerleave, canShowIframe=', this.canShowIframe, 'interactive=', this.isInteractive);
+    if (this.hoverListener && this.canShowIframe) {
+      this.hoverListener(false);
+    }
+  };
+
+  setHoverListener(handler: ((hovering: boolean) => void) | null) {
+    this.hoverListener = handler;
+  }
+
+  private updateScreenVisibility(showIframe: boolean) {
+    if (this.iframeObject) {
+      this.iframeObject.visible = showIframe;
+    }
+    if (this.wallpaperMesh) {
+      this.wallpaperMesh.visible = !showIframe;
+    }
+  }
+
+  setInteractionEnabled(enabled: boolean) {
+    const allowInteraction = enabled && this.canShowIframe;
+    this.isInteractive = allowInteraction;
+    console.log('[MonitorScreen] setInteractionEnabled -> allowInteraction=', allowInteraction, 'canShowIframe=', this.canShowIframe);
+
+    if (!allowInteraction && this.containerEl) {
+      this.containerEl.blur();
+    }
+
+    const pointerState = allowInteraction ? 'auto' : 'none';
+    if (this.containerEl) {
+      this.containerEl.style.pointerEvents = pointerState;
+      this.containerEl.style.boxShadow = allowInteraction
+        ? '0 0 35px rgba(90, 200, 255, 0.4)'
+        : 'none';
+    }
+    if (this.iframeEl) {
+      this.iframeEl.style.pointerEvents = pointerState;
+    }
+
+    if (allowInteraction) {
+      requestAnimationFrame(() => {
+        this.iframeEl?.focus();
+        try {
+          this.iframeEl?.contentWindow?.focus();
+        } catch (_err) {
+          // Cross-origin focus may fail silently; ignore errors.
+        }
+      });
+    }
+
+    this.updateScreenVisibility(this.canShowIframe);
   }
 
   createBezel(parent: THREE.Object3D) {
@@ -158,14 +231,10 @@ export class MonitorScreen {
   }
 
   setViewMode(cameraKey: CameraKey) {
-    const showIframe = cameraKey === CameraKey.BACK_WIDE || cameraKey === CameraKey.BACK_CLOSE;
-    
-    if (this.iframeObject) {
-      this.iframeObject.visible = showIframe;
+    this.canShowIframe = cameraKey === CameraKey.BACK_WIDE || cameraKey === CameraKey.BACK_CLOSE;
+    if (!this.canShowIframe) {
+      this.setInteractionEnabled(false);
     }
-    
-    if (this.wallpaperMesh) {
-      this.wallpaperMesh.visible = !showIframe;
-    }
+    this.updateScreenVisibility(this.canShowIframe);
   }
 }

@@ -46,6 +46,14 @@ export class SeveranceDeskHub {
     }
   }
 
+  setMonitorInteractivity(enabled: boolean) {
+    this.mainComputer?.setMonitorInteractivity(enabled);
+  }
+
+  setMonitorHoverListener(handler: ((hovering: boolean) => void) | null) {
+    this.mainComputer?.setMonitorHoverListener(handler);
+  }
+
   createHub() {
     const { HUB } = SEVERANCE_DESK_CONFIG;
     const HUB_HEIGHT = HUB.HEIGHT;

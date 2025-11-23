@@ -9,6 +9,7 @@ export class Computer {
   group: THREE.Group;
   monitorScreen: MonitorScreen | null = null;
   hasScreen: boolean;
+  pendingHoverListener: ((hovering: boolean) => void) | null = null;
 
   constructor(parent: THREE.Object3D, hasScreen: boolean = false) {
     this.group = new THREE.Group();
@@ -21,6 +22,15 @@ export class Computer {
     if (this.monitorScreen) {
       this.monitorScreen.setViewMode(cameraKey);
     }
+  }
+
+  setMonitorInteractivity(enabled: boolean) {
+    this.monitorScreen?.setInteractionEnabled(enabled);
+  }
+
+  setMonitorHoverListener(handler: ((hovering: boolean) => void) | null) {
+    this.pendingHoverListener = handler;
+    this.monitorScreen?.setHoverListener(handler);
   }
 
   async load() {
@@ -59,6 +69,9 @@ export class Computer {
       if (this.hasScreen) {
         // Interactive Screen (Iframe)
         this.monitorScreen = new MonitorScreen(this.model);
+        if (this.pendingHoverListener) {
+          this.monitorScreen.setHoverListener(this.pendingHoverListener);
+        }
       } else {
         // Static Placeholder (Lumon Logo)
         this.createStaticScreen();
