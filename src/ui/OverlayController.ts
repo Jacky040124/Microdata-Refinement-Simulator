@@ -62,6 +62,7 @@ export class OverlayController {
 
   private syncUiState() {
     this.musicPlayer.setEnabled(!this.devMode)
+    this.toggleGitHubButtonVisibility(!this.devMode)
     if (this.devButton) {
       this.updateDevButtonStyle(this.devButton, this.devMode)
       this.devButton.textContent = this.devMode ? 'Dev Mode ON' : 'Dev Mode'
@@ -71,52 +72,35 @@ export class OverlayController {
   private createDevButton() {
     const button = document.createElement('button')
     button.type = 'button'
+    button.className = 'lumon-button' // Use the global Lumon button class
     button.addEventListener('click', (event) => {
       event.preventDefault()
       event.stopPropagation()
       this.handleToggleDevMode()
     })
-    button.addEventListener('mouseenter', () => {
-      if (!this.devMode) {
-        button.style.background = '#f5f5f5'
-        button.style.borderColor = '#d0d0d0'
-      }
-    })
-    button.addEventListener('mouseleave', () => {
-      if (!this.devMode) {
-        button.style.background = '#fff'
-        button.style.borderColor = '#e0e0e0'
-      }
-    })
-
-    Object.assign(button.style, {
-      padding: '0.5rem 0.875rem',
-      fontSize: '0.875rem',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontWeight: '500',
-      transition: 'all 0.2s ease',
-      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-      fontFamily: 'inherit',
-      height: '40px',
-      lineHeight: '1',
-      borderWidth: '1px',
-      borderStyle: 'solid',
-    } satisfies Partial<CSSStyleDeclaration>)
-
+    
+    // Remove inline styles that are now handled by CSS class
+    // Keep only what's not in the CSS if necessary (none in this case)
+    
     return button
+  }
+
+  private toggleGitHubButtonVisibility(show: boolean) {
+    const element = this.gitHubButton.element
+    element.style.display = show ? 'inline-flex' : 'none'
   }
 
   private updateDevButtonStyle(button: HTMLButtonElement, isDevMode: boolean) {
     if (isDevMode) {
-      button.style.backgroundColor = '#4caf50'
-      button.style.color = '#fff'
-      button.style.borderColor = '#4caf50'
+      button.classList.add('active')
     } else {
-      button.style.backgroundColor = '#fff'
-      button.style.color = '#1a1a1a'
-      button.style.borderColor = '#e0e0e0'
+      button.classList.remove('active')
     }
+    
+    // Clear manual style overrides to let CSS classes take over
+    button.style.backgroundColor = ''
+    button.style.color = ''
+    button.style.borderColor = ''
   }
 
   private handleToggleDevMode() {

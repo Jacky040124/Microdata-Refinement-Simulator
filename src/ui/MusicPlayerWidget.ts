@@ -28,15 +28,19 @@ export class MusicPlayerWidget {
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
-      background: 'rgba(255, 255, 255, 0.9)',
+      // Styling now handled by lumon-button-like container logic or similar
+      // But since this is a widget, let's give it the Lumon card look
+      background: 'rgba(10, 22, 40, 0.75)',
+      border: '1px solid rgba(137, 196, 255, 0.6)',
       padding: '8px 16px',
-      borderRadius: '8px',
-      color: '#1a1a1a',
-      backdropFilter: 'blur(8px)',
-      border: '1px solid #e0e0e0',
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      fontSize: '14px',
+      borderRadius: '4px',
+      color: '#8bd0ff',
+      backdropFilter: 'blur(4px)',
+      boxShadow: '0 0 10px rgba(137, 196, 255, 0.2)',
+      fontFamily: '"IBM Plex Mono", monospace',
+      fontSize: '12px',
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
       transition: 'all 0.2s ease',
       pointerEvents: 'auto',
     })
@@ -83,33 +87,42 @@ export class MusicPlayerWidget {
 
     this.toggleButton = document.createElement('button')
     this.toggleButton.type = 'button'
+    // We'll style this as a subtle text button inside the widget
+    this.toggleButton.className = 'lumon-text-button' 
     this.toggleButton.addEventListener('click', (event) => {
       event.preventDefault()
       event.stopPropagation()
       this.togglePlayback()
     })
-    this.toggleButton.addEventListener('mouseenter', () => {
-      this.toggleButton.style.background = '#f5f5f5'
-    })
-    this.toggleButton.addEventListener('mouseleave', () => {
-      this.toggleButton.style.background = 'transparent'
-    })
+    
     applyStyles(this.toggleButton, {
       background: 'transparent',
-      border: 'none',
-      color: '#1a1a1a',
+      border: '1px solid rgba(137, 196, 255, 0.4)',
+      color: '#8bd0ff',
       cursor: 'pointer',
-      fontSize: '13px',
+      fontSize: '10px',
       padding: '4px 8px',
-      borderRadius: '4px',
+      borderRadius: '2px',
       transition: 'all 0.2s ease',
       fontWeight: '600',
+      fontFamily: 'inherit',
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase',
       display: 'flex',
       alignItems: 'center',
       gap: '4px',
       pointerEvents: 'auto',
       position: 'relative',
       zIndex: '10001',
+    })
+    
+    this.toggleButton.addEventListener('mouseenter', () => {
+      this.toggleButton.style.background = 'rgba(137, 196, 255, 0.1)'
+      this.toggleButton.style.borderColor = 'rgba(137, 196, 255, 0.8)'
+    })
+    this.toggleButton.addEventListener('mouseleave', () => {
+      this.toggleButton.style.background = 'transparent'
+      this.toggleButton.style.borderColor = 'rgba(137, 196, 255, 0.4)'
     })
 
     this.element.appendChild(statusWrapper)

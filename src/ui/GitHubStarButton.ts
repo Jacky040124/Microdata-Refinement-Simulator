@@ -15,7 +15,7 @@ export class GitHubStarButton {
     this.element.href = repoUrl
     this.element.target = '_blank'
     this.element.rel = 'noopener noreferrer'
-    this.element.className = 'github-star-button'
+    this.element.className = 'github-star-button lumon-button'
     this.element.setAttribute('aria-label', `Star ${this.repoName} on GitHub`)
 
     this.element.appendChild(this.createLogo())
