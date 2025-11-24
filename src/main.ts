@@ -19,8 +19,8 @@ if (!root) {
 
 const overlay = new OverlayController(root, {
   threeApp,
-  repoUrl: 'https://github.com/Jacky040124/typer-monkey',
-  repoName: 'typer-monkey',
+  repoUrl: 'https://github.com/Jacky040124/Microdata-Refinement-Simulator',
+  repoName: 'Microdata-Refinement-Simulator',
 })
 overlay.init()
 
